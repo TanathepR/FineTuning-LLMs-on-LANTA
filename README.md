@@ -33,8 +33,8 @@ FineTuning-LLMs-on-LANTA/
 ├── frontend/                          # ส่วนหน้าเว็บ (React)
 │   ├── package.json                   # Node.js dependencies และ scripts
 │   ├── tailwind.config.js             # การตั้งค่า Tailwind CSS
-│   ├── .env                           # ตัวแปรสภาพแวดล้อมสำหรับ frontend
-│   ├── public/                        # ไฟล์สาธารณะ
+│   ├── .env                           # ตัวแปรสภาพแวดล้อมสำหรับ frontend (ต้องสร้างเอง)
+│   ├── public/                        # โฟลเดอร์สาธารณะ
 │   │   ├── index.html                 # หน้าเว็บหลัก
 │   │   ├── manifest.json              # Web app manifest
 │   │   └── robots.txt                 # คำแนะนำสำหรับ web crawler
