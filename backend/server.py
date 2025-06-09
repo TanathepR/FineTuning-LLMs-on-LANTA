@@ -204,53 +204,6 @@ def automate_finetune():
     """
     รับไฟล์, บันทึกใน tmp folder, อัปโหลดไปยัง LANTA และลบไฟล์ใน tmp folder
     """
-    try:
-        # ตรวจสอบว่ามีไฟล์หรือไม่
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part in request'}), 400
-            
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-            
-        # เก็บข้อมูลพารามิเตอร์
-        model = request.form.get('model', '')
-        tuning = request.form.get('tuning', 'full')
-        learning_rate = request.form.get('learningRate', '0.001')
-        epoch = request.form.get('epoch', '10')
-        
-        # บันทึกไฟล์ลงใน tmp folder
-        save_success, save_message, local_path = save_to_tmp_folder(file)
-        
-        if not save_success:
-            return jsonify({'error': f'Failed to save file: {save_message}'}), 500
-            
-        # อัปโหลดไฟล์ไปยัง LANTA
-        remote_path = f'/project/cb900907-hpctgn/LLaMA-Factory/data/{os.path.basename(local_path)}'
-        upload_success, upload_message = upload_to_lanta(local_path, remote_path, update_info_json=True)
-        
-        # ลบไฟล์จาก tmp folder ไม่ว่าการอัปโหลดจะสำเร็จหรือไม่
-        cleanup_success = cleanup_file(local_path)
-        
-        if not upload_success:
-            return jsonify({'error': f'Failed to upload to LANTA: {upload_message}'}), 500
-            
-        # ถ้าทุกอย่างสำเร็จ
-        return jsonify({
-            'success': True,
-            'message': 'File uploaded successfully and temporary file cleaned up',
-            'cleanup_success': cleanup_success,
-            'details': {
-                'model': model,
-                'tuning': tuning,
-                'learning_rate': learning_rate,
-                'epoch': epoch
-            }
-        }), 200
-            
-    except Exception as e:
-        app.logger.exception(f"Unexpected error in automate_finetune: {e}")
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 @app.route('/ManualFineTune', methods=['POST'])
 def manual_finetune():
