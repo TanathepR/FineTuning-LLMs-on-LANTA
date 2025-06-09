@@ -12,6 +12,93 @@
 
 ระบบเว็บแอปพลิเคชันสำหรับการปรับแต่งโมเดลภาษาขนาดใหญ่ (Large Language Models) บนโครงสร้างพื้นฐานของซูเปอร์คอมพิวเตอร์ LANTA ของประเทศไทย โดยใช้เทคนิค LoRA (Low-Rank Adaptation) เพื่อประหยัดทรัพยากรการประมวลผล
 
+### ความสามารถหลัก
+- ปรับแต่งโมเดล Llama 3 (8B และ 70B พารามิเตอร์)
+- รองรับการทำงานแบบอัตโนมัติและแบบปรับแต่งเอง
+- เชื่อมต่อกับซูเปอร์คอมพิวเตอร์ LANTA ผ่าน SSH/SFTP
+- อินเทอร์เฟซเว็บที่ใช้งานง่าย
+
+---
+
+## สถาปัตยกรรมของระบบ (System Architecture)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       ผู้ใช้งาน (User Interface)                │
+│              เว็บเบราว์เซอร์ที่รองรับ JavaScript               │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ HTTP/HTTPS (Port 3000)
+                      │
+┌─────────────────────▼───────────────────────────────────────────┐
+│               ส่วนหน้า (Frontend - React.js)                    │
+│  ┌─────────────────┬─────────────────┬─────────────────────────┐ │
+│  │  User Interface │   State Mgmt    │    Progress Tracking    │ │
+│  │  Components     │   (useState)    │    Real-time Updates    │ │
+│  └─────────────────┴─────────────────┴─────────────────────────┘ │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ REST API Calls (Fetch)
+                      │
+┌─────────────────────▼───────────────────────────────────────────┐
+│               ส่วนหลัง (Backend - Flask Python)                 │
+│  ┌─────────────────┬─────────────────┬─────────────────────────┐ │
+│  │  File Upload    │  Authentication │   SFTP Integration      │ │
+│  │  Management     │  & Validation   │   Job Script Gen        │ │
+│  └─────────────────┴─────────────────┴─────────────────────────┘ │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ SSH/SFTP Protocol (Port 22)
+                      │ Paramiko Library
+┌─────────────────────▼───────────────────────────────────────────┐
+│                  LANTA HPC Infrastructure                       │
+│  ┌─────────────────┬─────────────────┬─────────────────────────┐ │
+│  │  SLURM Scheduler│  GPU Resources  │   LLaMA-Factory         │ │
+│  │  Job Queue Mgmt │  A100 GPUs      │   Training Framework    │ │
+│  └─────────────────┴─────────────────┴─────────────────────────┘ │
+│  ┌─────────────────┬─────────────────┬─────────────────────────┐ │
+│  │  File Storage   │  Terminal Access│   Port Forwarding       │ │
+│  │  /project/...   │  SSH Gateway    │   Web UI Access         │ │
+│  └─────────────────┴─────────────────┴─────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### องค์ประกอบของสถาปัตยกรรม
+
+#### 1. **ชั้น Frontend (Presentation Layer)**
+- **เทคโนโลยี**: React.js, Tailwind CSS
+- **หน้าที่**: 
+  - แสดงอินเทอร์เฟซผู้ใช้
+  - จัดการสถานะของแอปพลิเคชัน
+  - การอัปโหลดไฟล์และแสดงความคืบหน้า
+  - เชื่อมต่อ Terminal แบบ Web-based
+
+#### 2. **ชั้น Backend (Application Layer)**
+- **เทคโนโลยี**: Flask (Python), Paramiko
+- **หน้าที่**:
+  - API Gateway สำหรับการสื่อสารระหว่าง Frontend และ LANTA
+  - การจัดการไฟล์และตรวจสอบความถูกต้อง
+  - การยืนยันตัวตนและการรักษาความปลอดภัย
+  - การสื่อสารกับ LANTA ผ่าน SSH/SFTP
+  - การสร้าง Job Scripts สำหรับ SLURM
+
+#### 3. **ชั้น Infrastructure (LANTA HPC)**
+- **เทคโนโลยี**: SLURM, NVIDIA A100 GPUs, LLaMA-Factory
+- **หน้าที่**:
+  - การจัดการคิวงานและทรัพยากร
+  - การประมวลผลด้วย GPU ประสิทธิภาพสูง
+  - การฝึกโมเดลด้วย LoRA technique
+  - การจัดเก็บข้อมูลและโมเดล
+
+### การไหลของข้อมูล (Data Flow)
+
+```
+[ผู้ใช้] → [อัปโหลดไฟล์] → [Frontend Validation] → [Backend API] 
+    ↓
+[SFTP Transfer] → [LANTA Storage] → [Job Script Generation] 
+    ↓
+[SLURM Submission] → [GPU Processing] → [Model Training] → [Result Storage]
+    ↓
+[Port Forwarding] ← [LLaMA-Factory UI] ← [Web Access] ← [ผู้ใช้]
+```
+
 ---
 
 ## โครงสร้างโฟลเดอร์ (Directory Tree)
@@ -64,7 +151,7 @@ FineTuning-LLMs-on-LANTA/
 
 ### ซอฟต์แวร์ที่จำเป็น
 - **Node.js** เวอร์ชัน 16 ขึ้นไป
-- **Python** เวอร์ชัน 3.8 ขึ้นไป
+- **Python** เวอร์ชัน 3.9 ขึ้นไป
 - **npm** หรือ **yarn** package manager
 - **Git** สำหรับ version control
 - **เว็บเบราว์เซอร์** ที่รองรับ JavaScript (Chrome, Firefox, Safari, Edge)
@@ -84,23 +171,18 @@ FineTuning-LLMs-on-LANTA/
 # ดาวน์โหลดจาก Git repository
 git clone https://github.com/TanathepR/FineTuning-LLMs-on-LANTA.git
 cd FineTuning-LLMs-on-LANTA
-
 ```
 
 ### ขั้นตอนที่ 2: ติดตั้ง library สำหรับเซิร์ฟเวอร์
 
 ```bash
-
 # ติดตั้ง Python dependencies
 pip install -r requirements.txt
-
 ```
 
 ### ขั้นตอนที่ 3: ตั้งค่า Backend Environment Variables
 
-
 ```bash
-
 # ติดตั้ง Python dependencies
 cd backend
 
@@ -152,7 +234,6 @@ REACT_APP_TERMINAL_IP2=xxx.xxx.xxx.xxx
 ```bash
 cd ..\.ssh
 # คัดลอก private key ของคุณมาใส่ในโฟลเดอร์ .ssh
-
 ```
 
 ### ขั้นตอนที่ 7: รันโปรแกรม
@@ -237,7 +318,7 @@ dir .ssh/
 - รองรับเฉพาะเทคนิค LoRA เท่านั้น
 - ไฟล์ข้อมูลขนาดสูงสุด 50MB
 - ต้องมีการเชื่อมต่อกับ LANTA HPC
-- หลังปรับแต่งโมเดลด้วยตนเองสำเร็จ ผู้ใช้จะต้องเข้าไปดาวน์โหลดโมเดลที่ /project/cb900907-hpctgn/LLaMA-Factory/saves/โมเดลที่ใช้/lora/folderวันเวลาที่ฝึกฝน/
+- หลังปรับแต่งโมเดลด้วยตนเองสำเร็จ ผู้ใช้จะต้องเข้าไปดาวน์โหลดโมเดลที่ `/project/cb900907-hpctgn/LLaMA-Factory/saves/โมเดลที่ใช้/lora/folderวันเวลาที่ฝึกฝน/`
 - รองรับเฉพาะไฟล์รูปแบบ JSON
 
 ---
