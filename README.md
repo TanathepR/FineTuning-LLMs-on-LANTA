@@ -150,7 +150,7 @@ REACT_APP_TERMINAL_IP2=xxx.xxx.xxx.xxx
 ### ขั้นตอนที่ 6: ตั้งค่า SSH Key
 
 ```bash
-
+cd ..\.ssh
 # คัดลอก private key ของคุณมาใส่ในโฟลเดอร์ .ssh
 
 ```
